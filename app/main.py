@@ -90,6 +90,11 @@ def create_app() -> FastAPI:
         """Serve the main SPA dashboard."""
         return templates.TemplateResponse(request, "index.html")
 
+    @app.head("/")
+    def home_head() -> HTMLResponse:
+        """Endpoint for health check probes (prevents 405 Method Not Allowed)."""
+        return HTMLResponse(content="", status_code=200)
+
     # Global exception handler
     @app.exception_handler(Exception)
     def global_error(request: Request, exc: Exception) -> JSONResponse:

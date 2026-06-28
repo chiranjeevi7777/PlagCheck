@@ -44,7 +44,7 @@ class ArxivClient(BaseRetriever):
         }
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.get(_BASE_URL, params=params)
+                response = await client.get(_BASE_URL, params=params, follow_redirects=True)
                 if response.status_code == 200:
                     papers = self._parse_atom(response.text)
                     logger.info(

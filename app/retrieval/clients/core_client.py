@@ -52,7 +52,9 @@ class CoreClient(BaseRetriever):
 
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.get(_BASE_URL, params=params, headers=headers)
+                response = await client.get(
+                    _BASE_URL, params=params, headers=headers, follow_redirects=True
+                )
                 if response.status_code == 200:
                     results = response.json().get("results", [])
                     papers = [

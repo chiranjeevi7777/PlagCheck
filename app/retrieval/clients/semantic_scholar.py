@@ -39,7 +39,9 @@ class SemanticScholarClient(BaseRetriever):
         params = {"query": query, "limit": limit, "fields": _FIELDS}
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.get(_BASE_URL, params=params, headers=_HEADERS)
+                response = await client.get(
+                    _BASE_URL, params=params, headers=_HEADERS, follow_redirects=True
+                )
                 if response.status_code == 200:
                     data = response.json()
                     papers = [

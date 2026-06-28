@@ -41,7 +41,7 @@ class CrossrefClient(BaseRetriever):
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 response = await client.get(
-                    _BASE_URL, params=params, headers=_HEADERS
+                    _BASE_URL, params=params, headers=_HEADERS, follow_redirects=True
                 )
                 if response.status_code == 200:
                     items = response.json().get("message", {}).get("items", [])
