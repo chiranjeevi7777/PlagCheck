@@ -42,7 +42,9 @@ class CrossEncoderReranker(BaseReranker):
     Hybrid reranker combining CrossEncoder scores, embedding cosine similarity,
     and keyword overlap into a single combined ranking score.
 
-    Falls back to keyword-only ranking when the CrossEncoder model is unavailable.
+    Supports Hugging Face Inference API to offload deep learning computation,
+    completely preventing OOM crashes in low-memory environments like Render.
+    Falls back to keyword-only overlap comparison when both HF and local models are unavailable.
     """
 
     def __init__(self, model_name: str | None = None) -> None:
@@ -65,23 +67,28 @@ class CrossEncoderReranker(BaseReranker):
         if not candidates:
             return []
 
-        model = self._get_model()
         query_words = self._content_words(query)
+        abstracts = [c.abstract for c in candidates]
+        reranker_scores: List[float] | None = None
 
-        pairs = [(query, c.abstract[:512]) for c in candidates]
-        reranker_scores: List[float] = []
+        # 1. Try Hugging Face Inference API if enabled
+        if settings.use_huggingface_api:
+            reranker_scores = self._hf_api_call(query, abstracts)
 
-        if model is not None:
-            try:
-                raw_scores = model.predict(pairs)
-                # Sigmoid to normalise raw cross-encoder scores to [0,1]
-                reranker_scores = [float(1 / (1 + np.exp(-s))) for s in raw_scores]
-            except Exception as e:
-                logger.warning(f"CrossEncoder prediction error: {e}. Using keyword fallback.")
-                model = None
+        # 2. Try local model if API failed/disabled
+        if reranker_scores is None:
+            model = self._get_model()
+            if model is not None:
+                pairs = [(query, c.abstract[:512]) for c in candidates]
+                try:
+                    raw_scores = model.predict(pairs)
+                    # Sigmoid to normalise raw cross-encoder scores to [0,1]
+                    reranker_scores = [float(1 / (1 + np.exp(-s))) for s in raw_scores]
+                except Exception as e:
+                    logger.warning(f"CrossEncoder prediction error: {e}. Using keyword fallback.")
 
-        if model is None:
-            # Fallback: keyword overlap as reranker proxy
+        # 3. Fallback: keyword overlap as reranker proxy
+        if reranker_scores is None:
             reranker_scores = [
                 self._keyword_overlap(query_words, self._content_words(c.abstract))
                 for c in candidates
@@ -105,6 +112,9 @@ class CrossEncoderReranker(BaseReranker):
 
     @property
     def is_available(self) -> bool:
+        """True if either Hugging Face Inference API or the local model is available."""
+        if settings.use_huggingface_api:
+            return True
         return self._get_model() is not None
 
     # ── Private ───────────────────────────────────────────────────────────────
@@ -128,6 +138,72 @@ class CrossEncoderReranker(BaseReranker):
             self._available = False
         return self._model
 
+    def _hf_api_call(self, query: str, abstracts: List[str]) -> List[float] | None:
+        """Call Hugging Face Inference API to get cross-encoder rerank scores."""
+        import httpx
+        import time
+
+        headers = {}
+        if settings.hf_api_token:
+            headers["Authorization"] = f"Bearer {settings.hf_api_token}"
+
+        url = f"https://api-inference.huggingface.co/models/{self._model_name}"
+        payload = {"inputs": [[query, abs[:512]] for abs in abstracts]}
+
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                for attempt in range(3):
+                    response = client.post(url, json=payload, headers=headers)
+                    if response.status_code == 200:
+                        res = response.json()
+                        scores: List[float] = []
+
+                        if not isinstance(res, list):
+                            logger.warning(f"HF reranker returned non-list: {res}")
+                            return None
+
+                        for item in res:
+                            if isinstance(item, (int, float)):
+                                scores.append(float(item))
+                            elif isinstance(item, dict):
+                                scores.append(float(item.get("score", 0.0)))
+                            elif isinstance(item, list) and len(item) > 0:
+                                first = item[0]
+                                if isinstance(first, dict):
+                                    scores.append(float(first.get("score", 0.0)))
+                                elif isinstance(first, (int, float)):
+                                    scores.append(float(first))
+                                else:
+                                    scores.append(0.0)
+                            else:
+                                scores.append(0.0)
+
+                        if len(scores) == len(abstracts):
+                            normalized_scores = []
+                            for s in scores:
+                                if s < 0.0 or s > 1.0:
+                                    # Normalize raw logits to [0, 1] using standard sigmoid
+                                    normalized_scores.append(float(1.0 / (1.0 + np.exp(-s))))
+                                else:
+                                    normalized_scores.append(s)
+                            return normalized_scores
+                        return None
+
+                    elif response.status_code == 503:
+                        try:
+                            data = response.json()
+                            est_time = data.get("estimated_time", 5.0)
+                        except Exception:
+                            est_time = 5.0
+                        logger.info(f"HF model {self._model_name} is loading. Waiting {est_time:.1f}s...")
+                        time.sleep(min(est_time, 5.0))
+                    else:
+                        logger.warning(f"HF Reranker status {response.status_code}: {response.text}")
+                        break
+        except Exception as e:
+            logger.warning(f"HF Reranker connection error: {e}")
+        return None
+
     @staticmethod
     def _content_words(text: str) -> Set[str]:
         words = re.findall(r"\b[a-z0-9]{3,}\b", text.lower())
@@ -138,3 +214,4 @@ class CrossEncoderReranker(BaseReranker):
         if not a or not b:
             return 0.0
         return len(a & b) / max(len(a), len(b))
+

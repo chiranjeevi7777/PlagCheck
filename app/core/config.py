@@ -63,6 +63,10 @@ class Settings(BaseSettings):
         validation_alias="RERANKER_MODEL",
     )
 
+    # ── Hugging Face Inference API ───────────────────────────────────────────
+    use_huggingface_api: bool = Field(default=True, validation_alias="USE_HUGGINGFACE_API")
+    hf_api_token: str = Field(default="", validation_alias="HF_API_TOKEN")
+
     # ── Storage ───────────────────────────────────────────────────────────────
     upload_dir: str = Field(default="uploads", validation_alias="UPLOAD_DIR")
     report_dir: str = Field(default="reports", validation_alias="REPORT_DIR")
