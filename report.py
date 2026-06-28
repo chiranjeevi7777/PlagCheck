@@ -81,6 +81,7 @@ class PlagiarismReporter:
                 "suspected_filename": susp_meta.get("filename", "N/A"),
                 "suspected_word_count": susp_meta.get("word_count", 0),
                 "suspected_chunk_count": susp_meta.get("chunk_count", 0),
+                "suspected_file_path": susp_meta.get("file_path", "N/A"),
             },
             "overall_similarity": round(avg_similarity),
             "overall_exact_copy": round(avg_exact_copy),

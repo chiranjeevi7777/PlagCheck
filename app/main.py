@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api.routes import router
+from app.api.enhancement_routes import router as enhancement_router
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
 
     # Include API router
     app.include_router(router)
+    app.include_router(enhancement_router)
 
     # SPA home page
     @app.get("/", response_class=HTMLResponse)

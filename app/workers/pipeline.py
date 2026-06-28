@@ -244,6 +244,7 @@ def run_analysis_task(
             "filename": filename,
             "word_count": susp_word_count,
             "chunk_count": N,
+            "file_path": file_path,
         }
         plag_report = PlagiarismReporter.aggregate_results(
             results=plag_results, orig_meta=orig_meta, susp_meta=susp_meta
@@ -301,6 +302,7 @@ def run_ai_only_task(task_id: str, file_path: str, filename: str) -> None:
             "filename": filename,
             "word_count": len(text.split()),
             "chunk_count": len(chunks),
+            "file_path": file_path,
         }
 
         _update(task_id, 93.0, "processing", "Saving AI report…")

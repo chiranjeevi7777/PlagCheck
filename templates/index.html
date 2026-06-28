@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/ai_style.css">
+    <link rel="stylesheet" href="/static/css/enhancement_style.css">
 </head>
 <body>
     <div class="bg-glow glow-1"></div>
@@ -33,6 +34,9 @@
                 </button>
                 <button class="tab-btn" data-tab="combined" id="tab-combined">
                     <span class="tab-icon">📊</span> Combined Report
+                </button>
+                <button class="tab-btn" data-tab="enhancement" id="tab-enhancement">
+                    <span class="tab-icon">✨</span> Enhancement
                 </button>
             </nav>
             <div class="status-indicator">
@@ -370,6 +374,96 @@
                     </div>
                 </div>
 
+                <!-- ── TAB: DOCUMENT ENHANCEMENT ── -->
+                <div id="tab-pane-enhancement" class="tab-pane" style="display:none;">
+                    <div class="enh-header-row glass-card">
+                        <div class="version-controls">
+                            <span style="font-size:0.9rem; font-weight:600; color:rgba(255,255,255,0.7);">Document History:</span>
+                            <select id="enh-version-select" class="version-select">
+                                <option value="1">Version 1 (Original)</option>
+                            </select>
+                            <button id="enh-btn-restore" class="btn btn-primary" style="display:none; padding: 0.35rem 0.75rem; font-size:0.85rem;">Restore Version</button>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button id="enh-btn-docx" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.85rem;">
+                                📥 Word (DOCX)
+                            </button>
+                            <button id="enh-btn-pdf" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.85rem;">
+                                📥 PDF Report
+                            </button>
+                            <button id="enh-btn-diff" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.85rem;">
+                                📊 Diff PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quality KPIs -->
+                    <div class="enh-kpi-grid">
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Flesch Reading Ease</div>
+                            <div class="kpi-value" id="enh-kpi-ease">N/A</div>
+                            <p class="kpi-subtext">Clarity &amp; readability level</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Kincaid Grade Level</div>
+                            <div class="kpi-value" id="enh-kpi-grade">N/A</div>
+                            <p class="kpi-subtext">Education grade level</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Vocabulary Diversity</div>
+                            <div class="kpi-value" id="enh-kpi-ttr">N/A</div>
+                            <p class="kpi-subtext">Lexical type-token ratio</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Passive Voice</div>
+                            <div class="kpi-value" id="enh-kpi-passive">N/A</div>
+                            <p class="kpi-subtext">Syntactic voice ratio</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Word Count</div>
+                            <div class="kpi-value" id="enh-kpi-words">N/A</div>
+                            <p class="kpi-subtext">Active draft length</p>
+                        </div>
+                    </div>
+
+                    <!-- Display Mode Controls -->
+                    <div class="glass-card" style="padding:0.75rem 1.25rem; display:flex; gap:0.5rem; border-radius:10px; align-items:center;">
+                        <span style="font-size: 0.9rem; color:rgba(255,255,255,0.6); margin-right:auto;">Active Workspace</span>
+                        <button id="enh-btn-mode-editor" class="tab-btn active" style="font-size:0.85rem; padding:0.4rem 0.8rem; border-radius:6px; margin:0;">
+                            ✍️ Interactive Revisions
+                        </button>
+                        <button id="enh-btn-mode-diff" class="tab-btn" style="font-size:0.85rem; padding:0.4rem 0.8rem; border-radius:6px; margin:0;">
+                            🔍 Version Diff Tracker
+                        </button>
+                    </div>
+
+                    <!-- Workspaces -->
+                    <div class="enh-workspace" id="enh-workspace-editor">
+                        <!-- Left Pane: Paragraph List -->
+                        <div class="glass-card paragraphs-card" style="padding:1.25rem;">
+                            <h3 style="font-family:var(--font-display); font-size:1.05rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+                                <span>Paragraphs &amp; Issues</span>
+                                <span style="font-size:0.75rem; color:rgba(255,255,255,0.4);" id="enh-para-count">0 total</span>
+                            </h3>
+                            <div class="paragraphs-list-container" id="enh-paragraphs-list">
+                                <!-- Dynamic items here -->
+                            </div>
+                        </div>
+
+                        <!-- Right Pane: Interactive Editor -->
+                        <div class="glass-card editor-card" id="enh-editor-panel" style="padding:1.5rem;">
+                            <!-- Dynamic editor here -->
+                        </div>
+                    </div>
+
+                    <div class="glass-card" id="enh-workspace-diff" style="display:none; padding:1.5rem;">
+                        <h3 style="font-family:var(--font-display); font-size:1.1rem; margin-bottom:1rem;">Document Version Evolution (v1 vs Current)</h3>
+                        <div class="diff-view-mode" id="enh-diff-list">
+                            <!-- Dynamic diff items here -->
+                        </div>
+                    </div>
+                </div>
+
             </section>
         </main>
 
@@ -380,5 +474,6 @@
 
     <script src="/static/js/app.js"></script>
     <script src="/static/js/ai_app.js"></script>
+    <script src="/static/js/enhancement_app.js"></script>
 </body>
 </html>

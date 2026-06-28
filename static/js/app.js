@@ -300,6 +300,11 @@ function resetPipeline() {
     const tabNav = document.getElementById('tab-nav');
     if (tabNav) tabNav.style.display = 'none';
 
+    // Reset document enhancement manager
+    if (window.enhancementManager) {
+        window.enhancementManager.reset();
+    }
+
     validateStartButton();
     showSection('upload-section');
 }

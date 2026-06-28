@@ -47,7 +47,7 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
 
     // Show/hide panes
-    ['plagiarism', 'ai-analysis', 'combined'].forEach(name => {
+    ['plagiarism', 'ai-analysis', 'combined', 'enhancement'].forEach(name => {
         const pane = document.getElementById(`tab-pane-${name}`);
         if (pane) pane.style.display = (name === tabName) ? '' : 'none';
     });
@@ -58,6 +58,20 @@ function switchTab(tabName) {
     }
     if (tabName === 'combined' && window.fullReportData) {
         renderCombinedReport(window.fullReportData);
+    }
+    
+    // Automatically trigger enhancement analysis if switching to enhancement tab and it hasn't run yet
+    if (tabName === 'enhancement' && window.enhancementManager && window.fullReportData) {
+        if (!window.enhancementManager.documentId && !window.enhancementManager.isAnalyzing) {
+            const metadata = window.fullReportData.metadata || {};
+            const filePath = metadata.suspected_file_path;
+            const filename = metadata.suspected_filename || 'document.docx';
+            if (filePath && filePath !== 'N/A') {
+                window.enhancementManager.startAnalysis(filePath, filename);
+            } else {
+                console.warn('Cannot auto-trigger quality enhancement analysis: suspected_file_path is missing.');
+            }
+        }
     }
 }
 
