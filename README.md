@@ -1,101 +1,127 @@
-# PlagCheck AI - Groq-Powered Plagiarism & AI Writing Pattern Detector
+# PlagCheck AI - Retrieval-Augmented Plagiarism Detection Platform
 
-An enterprise-ready plagiarism detection and AI writing pattern analysis system built with **FastAPI** (Python 3.12) and the **Groq Cloud API**. It performs structural, lexical, and semantic comparison of uploaded documents against literature without vector database overhead.
-
----
-
-## Key Features
-
-- **Document Parsing:** Supports `.pdf` and `.docx` uploads up to 50MB.
-- **Intelligent Chunking:** Automatically segments text into sentence-aware blocks of 300–500 words with a 50-word overlap.
-- **Linear-Scaled Comparison:** Matches text using a mapped sliding-window alignment strategy to keep LLM calls at $O(N)$ linear scale.
-- **AI Writing Pattern Analyzer:** Analyzes chunks in parallel via a multi-threaded worker pool to detect predictability, structure regularity, and lack of sentence length variation.
-- **Interactive UI Dashboard:** A glassmorphic dark-mode single page application (SPA) featuring analysis grids, Chart.js visualizations, and side-by-side matching overlays.
-- **PDF Report Downloads:** Generates comprehensive PDF reports with highlighted matches, detailed scores, and system warnings.
+An enterprise-ready, retrieval-augmented plagiarism detection and AI writing pattern analysis system. Built with **FastAPI** (Python 3.11+) and the **Groq Cloud API**, PlagCheck AI performs hybrid semantic search, multi-source academic retrieval, two-stage candidate reranking, and segment-level LLM verification without vector database overhead.
 
 ---
 
-## Performance & Reliability Optimizations (New)
+## 🚀 Key Features
 
-### 1. Lexical Pre-filtering (Token Savings)
-To prevent unnecessary API costs and speed up comparisons, the comparator implements a content-word overlap screening:
-* Suspected document chunks are compared against reference abstracts using tokenized content-words (excluding common English stop words).
-* If the maximum overlap is **less than 3 content words**, the LLM call is bypassed. The chunk is marked **Original**, reducing API token usage by up to **90%** for original papers.
-
-### 2. Multi-Key API Rotation
-* The system accepts a comma-separated list of keys in `GROQ_API_KEY` (or `GROQ_API_KEYS`).
-* If a key hits a rate limit (HTTP 429), the client automatically rotates to the next key.
-
-### 3. Graceful Model Fallback
-* If a model is deprecated, decommissioned (like `gemma2-9b-it`), or unsupported, the client catches the HTTP 400/404 error, logs a warning, skips that model, and falls back to the next model in the priority list:
-  1. `llama-3.3-70b-versatile` (Primary)
-  2. `llama-3.1-8b-instant`
-  3. `qwen/qwen3-32b`
-  4. `qwen/qwen3.6-27b`
-
-### 4. Fast Failover (No SDK Retries)
-* Disabled the default Groq SDK exponential backoff (which blocks requests for 50+ seconds on rate limits) by setting `max_retries=0`, ensuring the failover to the next key or model triggers instantly.
+*   **Retrieval-Augmented Plagiarism Detection (RAG)**: Uses a unified `RetrievalManager` to search concurrently across 5 academic databases: **Semantic Scholar**, **OpenAlex**, **arXiv**, **Crossref**, and **CORE**.
+*   **Intelligent Query Engineering**: Automatically expands and reformulates raw document segments into **four distinct search queries** (keyword, semantic, expanded, and academic) to maximize recall.
+*   **Two-Stage Ranking Pipeline**:
+    *   *First Stage (Dense Embeddings)*: Compares document chunks with candidate papers using semantic text embeddings.
+    *   *Second Stage (Cross-Encoder Reranking)*: Evaluates candidate abstracts against document chunks using a cross-encoder model to surface the most relevant reference papers.
+*   **Linear-Scaled Comparison Engine**: Performs target verification of suspected document chunks against reference papers using a sliding-window mapping layout to keep LLM calls at $O(N)$ linear complexity.
+*   **AI Writing Pattern Service**: Evaluates predictability, structure homogeneity, and lexical density (repetition of transition words) in parallel across a multi-threaded worker pool.
+*   **Robust Groq Client**:
+    *   *Global Round-Robin Key Rotation*: Distributes API requests dynamically across a list of comma-separated keys to avoid TPM/RPM rate limits.
+    *   *Flexible Model Fallback*: Orderly transitions across multiple models (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768`, `gemma2-9b-it`, etc.) on decommissioning or outages.
+    *   *Prompt Optimization*: Explicitly instructs models to avoid markdown fence wrapping (such as ` ```json `), preventing `json_validate_failed` HTTP 400 errors.
+*   **Render Free-Tier Optimization**: Leverages the **Hugging Face Inference API** for embedding and cross-encoder tasks (falling back to a lightweight local TF-IDF signed hashing system when offline). This limits active memory usage to **<150MB RAM**, easily running under Render's 512MB limits.
+*   **Interactive Glassmorphic Dashboard**: A modern, dark-mode dashboard with side-by-side plagiarism comparisons, sentence-level matching, and Chart.js metrics.
+*   **Comprehensive PDF Reports**: Generates professional PDF summaries using ReportLab, highlighting match percentages, source citations, and AI probability.
 
 ---
 
-## Folder Structure
+## 📁 System Directory Structure
 
-```
+```text
 PlagCheck/
-├── app.py                  # FastAPI server with lifespan handler
-├── config.py               # Settings and Environment configuration
-├── routes.py               # API routes (upload, status, reports)
-├── extractor.py            # PDF / Word text extraction
-├── chunker.py              # Paragraph-based sentence chunking
-├── groq_client.py          # Groq SDK Client with rotation and fallback
-├── comparator.py           # Plagiarism comparison with lexical pre-filtering
-├── ai_analyzer.py          # Multi-threaded AI pattern analysis
-├── report.py               # ReportLab PDF compilation engine
-├── utils.py                # Logging and NLTK pre-warming
-├── requirements.txt        # Backend dependencies
-├── .env                    # Environment credentials (ignored by Git)
-├── .gitignore              # Files ignored by Git
-└── static/
-    ├── css/
-    │   ├── style.css       # SPA theme styling
-    │   └── ai_style.css    # AI writing pattern styling
-    ├── js/
-    │   ├── app.js          # Plagiarism charting & visualizer
-    │   └── ai_app.js       # AI metrics visualizer
-    └── templates/
-        └── index.html      # Glassmorphic UI Dashboard
+├── app/
+│   ├── api/
+│   │   └── routes.py         # API endpoints (upload, status, reports)
+│   ├── core/
+│   │   ├── config.py         # Environment configuration and settings loading
+│   │   └── logging.py        # Centralized application logging
+│   ├── embedding/
+│   │   └── bge_embedder.py   # Embedding generator (HF API + local TF-IDF fallback)
+│   ├── llm/
+│   │   ├── groq_client.py    # Robust Groq client with rotation and fallbacks
+│   │   ├── query_engineer.py # Document query expansion / rewriting service
+│   │   └── verifier.py       # Segment comparison verifier (Groq)
+│   ├── reranking/
+│   │   └── cross_encoder.py  # Cross-Encoder reranker service (HF API + fallback)
+│   ├── retrieval/
+│   │   ├── clients/          # API clients (arXiv, Crossref, OpenAlex, Semantic Scholar, CORE)
+│   │   └── manager.py        # Unified academic retrieval coordinator
+│   ├── schemas/
+│   │   ├── analysis.py       # Pydantic schemas for verification and style reports
+│   │   └── retrieval.py      # Pydantic schemas for query bundles and papers
+│   ├── services/
+│   │   ├── ai_analyzer.py    # Parallelized AI writing style evaluator
+│   │   ├── chunking.py       # Sentence-aware document segmentation
+│   │   ├── comparison.py     # Sliding-window comparison manager
+│   │   ├── extraction.py     # PDF & Word text extractor
+│   │   └── report.py         # ReportLab PDF report generation engine
+│   ├── workers/
+│   │   └── pipeline.py       # Asynchronous document analysis coordinator
+│   └── main.py               # FastAPI application setup and lifespans
+├── static/                   # CSS and JS dashboard resources
+├── templates/                # Jinja2 HTML layout file
+├── app.py                    # Root entrypoint shim (Uvicorn target)
+├── requirements.txt          # Python dependencies
+├── .env                      # Application credentials (local template)
+└── README.md                 # Project documentation
 ```
 
 ---
 
-## Installation & Local Execution
+## 🛠️ Installation & Local Setup
 
-### 1. Install Requirements
-Create a virtual environment and run:
+### 1. Clone & Install Dependencies
+Ensure you have Python 3.11+ installed. Clone the repository, create a virtual environment, and install dependencies:
 ```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment variables
 Create a `.env` file in the root directory:
 ```env
-GROQ_API_KEY=gsk_yourKey1,gsk_yourKey2
+# Groq LLM Configuration (Multiple keys comma-separated)
+GROQ_API_KEY=gsk_keyA,gsk_keyB,gsk_keyC
 GROQ_MODEL=llama-3.3-70b-versatile
+FALLBACK_MODELS=llama-3.3-70b-versatile,llama-3.1-8b-instant,mixtral-8x7b-32768,gemma2-9b-it,qwen/qwen3-32b,qwen/qwen3.6-27b
+TEMPERATURE=0.0
+MAX_TOKENS=1024
+
+# Academic Sources Features
+ENABLE_OPENALEX=true
+ENABLE_ARXIV=true
+ENABLE_CROSSREF=true
+ENABLE_CORE=true
+CORE_API_KEY=your_core_api_key_here
+
+# Embedding & Reranking Tuning
+ENABLE_EMBEDDING=true
+ENABLE_RERANKING=true
+USE_HUGGINGFACE_API=true
+HF_API_TOKEN=your_huggingface_api_token_here
+MAX_RETRIEVED_PAPERS=30
+MAX_RERANKED_PAPERS=10
+RETRIEVAL_TIMEOUT=12.0
 ```
 
-### 3. Run the Development Server
+### 3. Run Development Server
+Start the local server using the root shim:
 ```bash
 uvicorn app:app --reload
 ```
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your web browser.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
 
 ---
 
-## Production Deployment on Render
+## 🌐 Production Deployment on Render
 
-Render automatically detects the repository and deploys the app as a standard Web Service.
+To deploy the platform as a Web Service on **Render** (or equivalent cloud hosts):
 
-1. **Connect Repository:** Connect your GitHub repository to Render.
-2. **Build Command:** `pip install -r requirements.txt`
-3. **Start Command:** `uvicorn app:app --host 0.0.0.0 --port $PORT`
-4. **Environment Variables:** Add `GROQ_API_KEY` (comma-separated list) to your Render environment variables.
+1.  **Connect Repository**: Link your GitHub repository to your Render dashboard.
+2.  **Configuration Settings**:
+    *   **Environment**: `Python`
+    *   **Build Command**: `pip install -r requirements.txt`
+    *   **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+3.  **Environment Variables**:
+    *   Add your `GROQ_API_KEY` (or multiple comma-separated keys to avoid rate limits).
+    *   Add `HF_API_TOKEN` to enable high-quality semantic embeddings via the Hugging Face Inference API.
+    *   (Optional) Add `CORE_API_KEY` for access to the CORE academic database.
