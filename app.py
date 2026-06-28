@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -10,10 +11,18 @@ from config import settings
 from routes import router
 from utils import logger
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-warm or download NLTK tokenizers on start
+    from utils import init_nltk
+    init_nltk()
+    yield
+
 app = FastAPI(
     title="PlagCheck AI",
     description="Groq-powered Plagiarism Detection System",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware configuration
@@ -59,9 +68,5 @@ def global_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
-    # Pre-warm or download NLTK tokenizers on start
-    from utils import init_nltk
-    init_nltk()
-    
     logger.info("Starting PlagCheck server on http://localhost:8000")
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=False)
