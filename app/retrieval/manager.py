@@ -91,7 +91,7 @@ class RetrievalManager:
 
         # ── Step 2: Deduplicate ─────────────────────────────────────────────
         unique = self._deduplicate(all_raw)
-        logger.info(f"Retrieval: {total_raw} raw → {len(unique)} unique candidates")
+        logger.info(f"Retrieval: {total_raw} raw -> {len(unique)} unique candidates")
 
         # ── Step 3: Embed chunk + candidates ────────────────────────────────
         if settings.enable_embedding and self._embedder.is_available:

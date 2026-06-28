@@ -20,7 +20,7 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-_BASE_URL = "http://export.arxiv.org/api/query"
+_BASE_URL = "https://export.arxiv.org/api/query"
 _NS = {
     "atom": "http://www.w3.org/2005/Atom",
     "arxiv": "http://arxiv.org/schemas/atom",

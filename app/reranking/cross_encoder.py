@@ -98,8 +98,8 @@ class CrossEncoderReranker(BaseReranker):
 
         ranked = sorted(candidates, key=lambda c: c.combined_score, reverse=True)
         logger.info(
-            f"Reranked {len(candidates)} candidates → top {top_k}. "
-            f"Best combined_score={ranked[0].combined_score:.3f} if ranked else N/A"
+            f"Reranked {len(candidates)} candidates -> top {top_k}. "
+            f"Best combined_score={ranked[0].combined_score:.3f}"
         )
         return ranked[:top_k]
 

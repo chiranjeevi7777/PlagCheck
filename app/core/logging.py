@@ -17,7 +17,15 @@ def _configure_root_logger() -> None:
     if root.handlers:
         return  # already configured
 
-    handler = logging.StreamHandler(sys.stdout)
+    # Force UTF-8 output — prevents UnicodeEncodeError on Windows (cp1252 default)
+    stream = sys.stdout
+    if hasattr(stream, "reconfigure"):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+    handler = logging.StreamHandler(stream)
     handler.setFormatter(
         logging.Formatter(
             "%(asctime)s [%(levelname)s] %(name)s: %(message)s",

@@ -124,7 +124,7 @@ class AIWritingPatternService:
             data["classification"] = matched
             data["chunk_id"] = cid
             result = AIChunkResult(**data)
-            logger.info(f"AI: {cid} → {result.ai_probability}% ({result.classification})")
+            logger.info(f"AI: {cid} -> {result.ai_probability}% ({result.classification})")
             return result
         except Exception as e:
             logger.error(f"AI analysis error for {cid}: {e}")
