@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlagCheck AI | Plagiarism & AI Writing Pattern Detector</title>
+    <meta name="description" content="Analyze documents for plagiarism and AI writing patterns using Groq LLM and Semantic Scholar.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/ai_style.css">
+</head>
+<body>
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+    <div class="bg-glow glow-3"></div>
+
+    <div class="app-container">
+        <!-- Navigation Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">✨</span>
+                <h1>PlagCheck <span class="accent-text">AI</span></h1>
+            </div>
+            <nav class="tab-nav" id="tab-nav" style="display:none;">
+                <button class="tab-btn active" data-tab="plagiarism" id="tab-plagiarism">
+                    <span class="tab-icon">🔍</span> Plagiarism
+                </button>
+                <button class="tab-btn" data-tab="ai-analysis" id="tab-ai">
+                    <span class="tab-icon">🤖</span> AI Analysis
+                </button>
+                <button class="tab-btn" data-tab="combined" id="tab-combined">
+                    <span class="tab-icon">📊</span> Combined Report
+                </button>
+            </nav>
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span>Groq LLM Engine Active</span>
+            </div>
+        </header>
+
+        <main class="app-main">
+
+            <!-- ═══════════════════════════════════════════════════
+                 SECTION 1: UPLOAD SCREEN
+            ═══════════════════════════════════════════════════ -->
+            <section id="upload-section" class="glass-card active">
+                <div class="section-header text-center">
+                    <h2>Plagiarism &amp; AI Writing Pattern Analysis</h2>
+                    <p class="section-subtitle">Upload a document to check for plagiarism against scientific literature and detect AI-generated writing patterns using Groq LLM.</p>
+                </div>
+
+                <div class="upload-flex-container">
+                    <div class="upload-box" id="file-dropzone">
+                        <input type="file" id="file-input" accept=".pdf,.docx" style="display:none;">
+                        <div class="upload-icon-wrapper">
+                            <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <h3>Upload Document to Analyze</h3>
+                        <p class="upload-hint">Drag &amp; drop or <span class="browse-link">browse</span> — PDF or DOCX up to 50 MB</p>
+                        <div class="file-details" id="file-details">
+                            <span class="file-name"></span>
+                            <span class="file-size"></span>
+                            <button type="button" class="remove-file" id="file-remove">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="query-input-wrapper">
+                        <label for="query-input">
+                            Database Search Keywords / Topic
+                            <span class="optional-badge">Optional</span>
+                        </label>
+                        <input type="text" id="query-input" placeholder="e.g. deep learning, quantum computing…">
+                        <p class="query-hint">If blank, PlagCheck AI will auto-extract keywords from your document.</p>
+                    </div>
+
+                    <div class="analysis-mode-row">
+                        <div class="mode-card active" id="mode-combined" data-mode="combined">
+                            <span class="mode-icon">⚡</span>
+                            <div>
+                                <strong>Full Analysis</strong>
+                                <span>Plagiarism + AI Pattern Detection</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar text-center">
+                    <button type="button" id="start-btn" class="btn btn-primary" disabled>
+                        <span>Analyze Document</span>
+                        <svg class="btn-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════════════
+                 SECTION 2: PROGRESS SCREEN
+            ═══════════════════════════════════════════════════ -->
+            <section id="progress-section" class="glass-card">
+                <div class="progress-wrapper text-center">
+                    <div class="spinner-container">
+                        <div class="loading-spinner"></div>
+                        <div class="spinner-core">AI</div>
+                    </div>
+                    <h2 id="progress-title">Starting Analysis</h2>
+                    <p id="progress-msg" class="progress-subtext">Initializing pipeline…</p>
+                    <div class="progress-container">
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-percentage" id="progress-text">0%</div>
+                    </div>
+                    <div class="progress-stages" id="progress-stages">
+                        <div class="stage" id="stage-extract">📄 Text Extraction</div>
+                        <div class="stage" id="stage-search">🔎 Literature Search</div>
+                        <div class="stage" id="stage-plag">🔍 Plagiarism Analysis</div>
+                        <div class="stage" id="stage-ai">🤖 AI Pattern Analysis</div>
+                        <div class="stage" id="stage-report">📊 Generating Report</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══════════════════════════════════════════════════
+                 SECTION 3: DASHBOARD (multi-tab)
+            ═══════════════════════════════════════════════════ -->
+            <section id="dashboard-section" class="dashboard-layout">
+
+                <!-- Dashboard Header -->
+                <div class="dashboard-header glass-card">
+                    <div class="doc-meta-info">
+                        <h2 id="dashboard-title">Analysis Dashboard</h2>
+                        <div class="meta-tag-row">
+                            <span class="meta-tag"><b>Query:</b> <span id="meta-query-val">N/A</span></span>
+                            <span class="meta-tag"><b>Document:</b> <span id="meta-susp-file">—</span></span>
+                            <span class="meta-tag"><b>Words:</b> <span id="meta-susp-words">0</span></span>
+                            <span class="meta-tag"><b>Chunks:</b> <span id="meta-chunks">0</span></span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button type="button" id="pdf-btn" class="btn btn-secondary">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Download PDF
+                        </button>
+                        <button type="button" id="new-compare-btn" class="btn btn-outline">New Analysis</button>
+                    </div>
+                </div>
+
+                <!-- ── TAB: PLAGIARISM ── -->
+                <div id="tab-pane-plagiarism" class="tab-pane active">
+                    <div class="kpi-grid">
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Overall Similarity</div>
+                            <div class="kpi-value text-glow-red" id="kpi-similarity">0%</div>
+                            <div class="kpi-badge" id="kpi-similarity-badge">Low</div>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Exact Copy</div>
+                            <div class="kpi-value" id="kpi-exact">0%</div>
+                            <p class="kpi-subtext">Direct text matches</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Paraphrased</div>
+                            <div class="kpi-value" id="kpi-paraphrase">0%</div>
+                            <p class="kpi-subtext">Semantic rewrites</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Avg Confidence</div>
+                            <div class="kpi-value" id="kpi-confidence">0%</div>
+                            <p class="kpi-subtext">LLM evaluation match</p>
+                        </div>
+                    </div>
+
+                    <div class="charts-row">
+                        <div class="chart-card glass-card">
+                            <h3>Similarity Distribution</h3>
+                            <div class="chart-container-inner"><canvas id="distribution-chart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass-card">
+                            <h3>Classification Breakdown</h3>
+                            <div class="chart-container-inner"><canvas id="classification-chart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-details-grid">
+                        <div class="table-container glass-card">
+                            <div class="table-header">
+                                <h3>Document Chunks</h3>
+                                <div class="search-box"><input type="text" id="chunk-search" placeholder="Search chunks…"></div>
+                            </div>
+                            <div class="table-wrapper">
+                                <table id="chunks-table">
+                                    <thead><tr>
+                                        <th class="sortable" data-sort="id">Chunk ↕</th>
+                                        <th class="sortable" data-sort="semantic_similarity">Similarity ↕</th>
+                                        <th class="sortable" data-sort="confidence">Confidence ↕</th>
+                                        <th>Classification</th>
+                                        <th>Status</th>
+                                    </tr></thead>
+                                    <tbody id="chunks-table-body"></tbody>
+                                </table>
+                            </div>
+                            <div class="pagination">
+                                <button type="button" id="prev-page" class="page-btn" disabled>&lt; Prev</button>
+                                <span id="page-indicator">Page 1 of 1</span>
+                                <button type="button" id="next-page" class="page-btn" disabled>Next &gt;</button>
+                            </div>
+                        </div>
+
+                        <div class="highlight-viewer glass-card" id="highlight-pane">
+                            <div class="viewer-header">
+                                <h3>Comparison Viewer</h3>
+                                <div class="viewer-meta" id="viewer-metadata">Select a chunk to view details.</div>
+                            </div>
+                            <div class="side-by-side-layout">
+                                <div class="text-pane">
+                                    <div class="pane-title">Suspected Chunk</div>
+                                    <div class="pane-content" id="pane-suspected"><p class="placeholder-text">Select a chunk to inspect.</p></div>
+                                </div>
+                                <div class="text-pane">
+                                    <div class="pane-title">Matched Source</div>
+                                    <div class="pane-content" id="pane-original"><p class="placeholder-text">Select a chunk to inspect.</p></div>
+                                </div>
+                            </div>
+                            <div class="highlight-legend">
+                                <span class="legend-item"><span class="legend-dot color-exact"></span> Exact Copy</span>
+                                <span class="legend-item"><span class="legend-dot color-paraphrase"></span> Paraphrase</span>
+                                <span class="legend-item"><span class="legend-dot color-clean"></span> Original</span>
+                            </div>
+                            <div class="reason-container" id="pane-reason-box" style="display:none;">
+                                <strong>Analysis Remarks:</strong>
+                                <p id="pane-reason-content"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── TAB: AI ANALYSIS ── -->
+                <div id="tab-pane-ai-analysis" class="tab-pane" style="display:none;">
+
+                    <!-- AI KPI Grid -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card glass-card ai-kpi-card">
+                            <div class="kpi-label">AI Pattern Score</div>
+                            <div class="kpi-value" id="ai-kpi-score">0%</div>
+                            <div class="kpi-badge" id="ai-kpi-badge">Very Low</div>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Avg Confidence</div>
+                            <div class="kpi-value" id="ai-kpi-confidence">0%</div>
+                            <p class="kpi-subtext">Analysis reliability</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">High AI Sections</div>
+                            <div class="kpi-value text-glow-orange" id="ai-kpi-high">0</div>
+                            <p class="kpi-subtext">≥ 61% probability</p>
+                        </div>
+                        <div class="kpi-card glass-card">
+                            <div class="kpi-label">Moderate Sections</div>
+                            <div class="kpi-value" id="ai-kpi-moderate">0</div>
+                            <p class="kpi-subtext">41–60% probability</p>
+                        </div>
+                    </div>
+
+                    <!-- AI Charts -->
+                    <div class="charts-row">
+                        <div class="chart-card glass-card">
+                            <h3>🤖 AI Score Gauge</h3>
+                            <div class="chart-container-inner"><canvas id="ai-gauge-chart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass-card">
+                            <h3>Probability Distribution</h3>
+                            <div class="chart-container-inner"><canvas id="ai-dist-chart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="charts-row" style="margin-top:0;">
+                        <div class="chart-card glass-card">
+                            <h3>Chunk Probability Histogram</h3>
+                            <div class="chart-container-inner"><canvas id="ai-histogram-chart"></canvas></div>
+                        </div>
+                        <div class="chart-card glass-card">
+                            <h3>Top Detected Features</h3>
+                            <div class="chart-container-inner"><canvas id="ai-features-chart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- AI Disclaimer -->
+                    <div class="ai-disclaimer glass-card">
+                        <span class="disclaimer-icon">⚠️</span>
+                        <p id="ai-disclaimer-text">This analysis estimates writing patterns commonly associated with AI-generated content. It should not be interpreted as definitive proof that any passage was written by AI.</p>
+                    </div>
+
+                    <!-- AI Chunk Viewer -->
+                    <div class="ai-chunk-viewer glass-card">
+                        <div class="table-header">
+                            <h3>🎨 Interactive Document Viewer</h3>
+                            <div class="search-box"><input type="text" id="ai-chunk-search" placeholder="Search chunks…"></div>
+                        </div>
+                        <div id="ai-chunk-grid"></div>
+                        <div class="pagination">
+                            <button type="button" id="ai-prev-page" class="page-btn" disabled>&lt; Prev</button>
+                            <span id="ai-page-indicator">Page 1 of 1</span>
+                            <button type="button" id="ai-next-page" class="page-btn" disabled>Next &gt;</button>
+                        </div>
+                    </div>
+
+                    <!-- AI Detail Panel -->
+                    <div id="ai-detail-panel" class="ai-detail-panel glass-card" style="display:none;">
+                        <div class="ai-detail-header">
+                            <div>
+                                <h3 id="ai-detail-chunk-id">chunk_0</h3>
+                                <span id="ai-detail-classification" class="ai-class-badge"></span>
+                            </div>
+                            <button class="ai-close-btn" id="ai-panel-close">&times;</button>
+                        </div>
+                        <div class="ai-detail-metrics">
+                            <div class="ai-metric-pill"><span class="ai-metric-label">AI Probability</span><span class="ai-metric-val" id="ai-detail-prob">0%</span></div>
+                            <div class="ai-metric-pill"><span class="ai-metric-label">Confidence</span><span class="ai-metric-val" id="ai-detail-conf">0%</span></div>
+                        </div>
+                        <div class="ai-detail-reason" id="ai-detail-reason"></div>
+                        <div class="ai-feature-tags" id="ai-detail-features"></div>
+                        <div class="ai-detail-text-box" id="ai-detail-text"></div>
+                    </div>
+
+                    <!-- AI Summary Table -->
+                    <div class="glass-card" style="padding:1.75rem;">
+                        <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:1rem;">Final AI Pattern Summary</h3>
+                        <div class="ai-summary-grid" id="ai-summary-grid"></div>
+                    </div>
+                </div>
+
+                <!-- ── TAB: COMBINED REPORT ── -->
+                <div id="tab-pane-combined" class="tab-pane" style="display:none;">
+                    <div class="combined-grid">
+                        <!-- Left: Plagiarism Summary -->
+                        <div class="combined-card glass-card">
+                            <div class="combined-card-header">
+                                <span class="combined-icon">🔍</span>
+                                <h3>Plagiarism Analysis</h3>
+                            </div>
+                            <div class="combined-kpis" id="combined-plag-kpis"></div>
+                        </div>
+                        <!-- Right: AI Summary -->
+                        <div class="combined-card glass-card">
+                            <div class="combined-card-header">
+                                <span class="combined-icon">🤖</span>
+                                <h3>AI Writing Patterns</h3>
+                            </div>
+                            <div class="combined-kpis" id="combined-ai-kpis"></div>
+                        </div>
+                    </div>
+
+                    <!-- Combined Chart -->
+                    <div class="chart-card glass-card" style="margin-top:1.5rem;">
+                        <h3>Combined Risk Overview</h3>
+                        <div class="chart-container-inner"><canvas id="combined-chart"></canvas></div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="glass-card recommendation-card" id="combined-recommendations" style="margin-top:1.5rem;padding:2rem;">
+                        <h3 style="font-family:var(--font-display);font-size:1.2rem;margin-bottom:1rem;">📋 Recommendations</h3>
+                        <div id="combined-rec-content"></div>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div class="ai-disclaimer glass-card" style="margin-top:1.5rem;">
+                        <span class="disclaimer-icon">⚠️</span>
+                        <p>AI pattern scores are probabilistic estimates. Plagiarism scores compare against retrieved literature only. Neither metric constitutes legal or academic proof.</p>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+
+        <footer class="app-footer-bar">
+            <p>PlagCheck AI v2.0 — Plagiarism Detection + AI Writing Pattern Analysis powered by Groq LLM &amp; Semantic Scholar.</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/ai_app.js"></script>
+</body>
+</html>

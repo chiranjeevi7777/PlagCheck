@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+uploads/
+reports/
+.pytest_cache/
+test_doc.pdf
+test_combined_report.pdf
+*.pdf
