@@ -34,13 +34,14 @@ class GroqAPIClient:
     - Returns raw JSON string — callers parse and validate.
     """
 
+    _key_index = 0  # Global class-level key index for round-robin rotation across all instances
+
     def __init__(self) -> None:
         self.api_keys: List[str] = settings.get_api_keys()
         self.models: List[str] = settings.get_fallback_models()
         self.temperature = settings.temperature
         self.max_tokens = settings.max_tokens
         self.timeout = settings.timeout_seconds
-        self._key_index = 0
 
         if not self.api_keys:
             logger.warning("No Groq API keys configured. LLM calls will fail.")
@@ -64,7 +65,9 @@ class GroqAPIClient:
 
         for model in self.models:
             for offset in range(len(self.api_keys)):
-                idx = (self._key_index + offset) % len(self.api_keys)
+                # Get the next key round-robin and advance the global index
+                idx = GroqAPIClient._key_index
+                GroqAPIClient._key_index = (GroqAPIClient._key_index + 1) % len(self.api_keys)
                 key = self.api_keys[idx]
                 try:
                     logger.info(
@@ -78,7 +81,6 @@ class GroqAPIClient:
                         max_tokens=self.max_tokens,
                         response_format={"type": "json_object"},
                     )
-                    self._key_index = idx  # remember last successful key
                     return resp.choices[0].message.content
 
                 except groq.RateLimitError as e:
@@ -89,18 +91,26 @@ class GroqAPIClient:
                     logger.warning(f"Connection/timeout — model={model} key_idx={idx}: {e}")
                 except groq.APIStatusError as e:
                     last_exc = e
-                    if e.status_code in (400, 404):
+                    err_msg = str(e).lower()
+                    # Distinguish between model unsupported/not found (404/bad parameter) vs JSON validation failure
+                    is_unsupported = False
+                    if e.status_code == 404:
+                        is_unsupported = True
+                    elif e.status_code == 400:
+                        if "json" not in err_msg and "validate" not in err_msg:
+                            is_unsupported = True
+
+                    if is_unsupported:
                         logger.warning(
-                            f"Model '{model}' unsupported (HTTP {e.status_code}). "
+                            f"Model '{model}' unsupported or bad request (HTTP {e.status_code}). "
                             "Skipping to next model."
                         )
                         break  # skip remaining keys for this model
-                    elif e.status_code == 429:
-                        logger.warning(f"Status 429 — model={model} key_idx={idx}. Rotating key.")
-                    elif e.status_code in (401, 403):
-                        logger.warning(f"Auth error (HTTP {e.status_code}) for key_idx={idx}.")
                     else:
-                        logger.warning(f"API error HTTP {e.status_code} — {e.message}")
+                        logger.warning(
+                            f"API status HTTP {e.status_code} — model={model} key_idx={idx}: {e.message}. "
+                            "Rotating key."
+                        )
                 except Exception as e:
                     last_exc = e
                     logger.error(f"Unexpected error — model={model}: {e}")

@@ -35,7 +35,7 @@ Return ONLY valid JSON matching this schema:
   "expanded_query": "string",
   "academic_query": "string"
 }
-Never include markdown fences or explanation outside the JSON."""
+The response MUST be a single raw JSON object. Do NOT wrap the JSON in markdown code blocks or backticks (e.g. do NOT use ```json or ```). Start directly with { and end with }."""
 
 _FALLBACK_QUERY = "machine learning deep learning artificial intelligence"
 

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     groq_api_keys: str = Field(default="", validation_alias="GROQ_API_KEYS")
     groq_model: str = Field(default="llama-3.3-70b-versatile", validation_alias="GROQ_MODEL")
     fallback_models: str = Field(
-        default="llama-3.3-70b-versatile,llama-3.1-8b-instant,qwen/qwen3-32b,qwen/qwen3.6-27b",
+        default="llama-3.3-70b-versatile,llama-3.1-8b-instant,mixtral-8x7b-32768,gemma2-9b-it,qwen/qwen3-32b,qwen/qwen3.6-27b",
         validation_alias="FALLBACK_MODELS",
     )
     temperature: float = Field(default=0.0, validation_alias="TEMPERATURE")

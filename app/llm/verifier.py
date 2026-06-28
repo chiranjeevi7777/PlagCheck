@@ -50,7 +50,7 @@ Return ONLY a JSON object matching this exact schema:
   ]
 }
 Include sentence_matches only for pairs with similarity >= 50.
-Never return markdown fences or text outside the JSON."""
+The response MUST be a single raw JSON object. Do NOT wrap the JSON in markdown code blocks or backticks (e.g. do NOT use ```json or ```). Start directly with { and end with }."""
 
 
 class GroqVerifier:
